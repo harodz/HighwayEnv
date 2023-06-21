@@ -25,6 +25,11 @@ def register_highway_envs():
         id='highway-fast-v0',
         entry_point='highway_env.envs:HighwayEnvFast',
     )
+    
+    register(
+        id='Dev-highway',
+        entry_point='highway_env.envs:DevHighway',
+    )
 
     # intersection_env.py
     register(

@@ -57,15 +57,17 @@ class RacetrackEnv(AbstractEnv):
 
     def _reward(self, action: np.ndarray) -> float:
         rewards = self._rewards(action)
-        reward = sum(self.config.get(name, 0) * reward for name, reward in rewards.items())
-        reward = utils.lmap(reward, [self.config["collision_reward"], 1], [0, 1])
+        reward = sum(self.config.get(name, 0) *
+                     reward for name, reward in rewards.items())
+        reward = utils.lmap(
+            reward, [self.config["collision_reward"], 1], [0, 1])
         reward *= rewards["on_road_reward"]
         return reward
 
     def _rewards(self, action: np.ndarray) -> Dict[Text, float]:
         _, lateral = self.vehicle.lane.local_coordinates(self.vehicle.position)
         return {
-            "lane_centering_reward": 1/(1+self.config["lane_centering_cost"]*lateral**2),
+            "lane_centering_reward": 1 / (1 + self.config["lane_centering_cost"] * lateral**2),
             "action_reward": np.linalg.norm(action),
             "collision_reward": self.vehicle.crashed,
             "on_road_reward": self.vehicle.on_road,
@@ -88,12 +90,14 @@ class RacetrackEnv(AbstractEnv):
         speedlimits = [None, 10, 10, 10, 10, 10, 10, 10, 10]
 
         # Initialise First Lane
-        lane = StraightLane([42, 0], [100, 0], line_types=(LineType.CONTINUOUS, LineType.STRIPED), width=5, speed_limit=speedlimits[1])
+        lane = StraightLane([42, 0], [100, 0], line_types=(
+            LineType.CONTINUOUS, LineType.STRIPED), width=5, speed_limit=speedlimits[1])
         self.lane = lane
 
         # Add Lanes to Road Network - Straight Section
         net.add_lane("a", "b", lane)
-        net.add_lane("a", "b", StraightLane([42, 5], [100, 5], line_types=(LineType.STRIPED, LineType.CONTINUOUS), width=5, speed_limit=speedlimits[1]))
+        net.add_lane("a", "b", StraightLane([42, 5], [100, 5], line_types=(
+            LineType.STRIPED, LineType.CONTINUOUS), width=5, speed_limit=speedlimits[1]))
 
         # 2 - Circular Arc #1
         center1 = [100, -20]
@@ -103,16 +107,18 @@ class RacetrackEnv(AbstractEnv):
                                   clockwise=False, line_types=(LineType.CONTINUOUS, LineType.NONE),
                                   speed_limit=speedlimits[2]))
         net.add_lane("b", "c",
-                     CircularLane(center1, radii1+5, np.deg2rad(90), np.deg2rad(-1), width=5,
+                     CircularLane(center1, radii1 + 5, np.deg2rad(90), np.deg2rad(-1), width=5,
                                   clockwise=False, line_types=(LineType.STRIPED, LineType.CONTINUOUS),
                                   speed_limit=speedlimits[2]))
 
         # 3 - Vertical Straight
         net.add_lane("c", "d", StraightLane([120, -20], [120, -30],
-                                            line_types=(LineType.CONTINUOUS, LineType.NONE), width=5,
+                                            line_types=(
+                                                LineType.CONTINUOUS, LineType.NONE), width=5,
                                             speed_limit=speedlimits[3]))
         net.add_lane("c", "d", StraightLane([125, -20], [125, -30],
-                                            line_types=(LineType.STRIPED, LineType.CONTINUOUS), width=5,
+                                            line_types=(
+                                                LineType.STRIPED, LineType.CONTINUOUS), width=5,
                                             speed_limit=speedlimits[3]))
 
         # 4 - Circular Arc #2
@@ -123,7 +129,7 @@ class RacetrackEnv(AbstractEnv):
                                   clockwise=False, line_types=(LineType.CONTINUOUS, LineType.NONE),
                                   speed_limit=speedlimits[4]))
         net.add_lane("d", "e",
-                     CircularLane(center2, radii2+5, np.deg2rad(0), np.deg2rad(-181), width=5,
+                     CircularLane(center2, radii2 + 5, np.deg2rad(0), np.deg2rad(-181), width=5,
                                   clockwise=False, line_types=(LineType.STRIPED, LineType.CONTINUOUS),
                                   speed_limit=speedlimits[4]))
 
@@ -131,7 +137,7 @@ class RacetrackEnv(AbstractEnv):
         center3 = [70, -30]
         radii3 = 15
         net.add_lane("e", "f",
-                     CircularLane(center3, radii3+5, np.deg2rad(0), np.deg2rad(136), width=5,
+                     CircularLane(center3, radii3 + 5, np.deg2rad(0), np.deg2rad(136), width=5,
                                   clockwise=True, line_types=(LineType.CONTINUOUS, LineType.STRIPED),
                                   speed_limit=speedlimits[5]))
         net.add_lane("e", "f",
@@ -141,10 +147,12 @@ class RacetrackEnv(AbstractEnv):
 
         # 6 - Slant
         net.add_lane("f", "g", StraightLane([55.7, -15.7], [35.7, -35.7],
-                                            line_types=(LineType.CONTINUOUS, LineType.NONE), width=5,
+                                            line_types=(
+                                                LineType.CONTINUOUS, LineType.NONE), width=5,
                                             speed_limit=speedlimits[6]))
         net.add_lane("f", "g", StraightLane([59.3934, -19.2], [39.3934, -39.2],
-                                            line_types=(LineType.STRIPED, LineType.CONTINUOUS), width=5,
+                                            line_types=(
+                                                LineType.STRIPED, LineType.CONTINUOUS), width=5,
                                             speed_limit=speedlimits[6]))
 
         # 7 - Circular Arc #4 - Bugs out when arc is too large, hence written in 2 sections
@@ -155,7 +163,7 @@ class RacetrackEnv(AbstractEnv):
                                   clockwise=False, line_types=(LineType.CONTINUOUS, LineType.NONE),
                                   speed_limit=speedlimits[7]))
         net.add_lane("g", "h",
-                     CircularLane(center4, radii4+5, np.deg2rad(315), np.deg2rad(165), width=5,
+                     CircularLane(center4, radii4 + 5, np.deg2rad(315), np.deg2rad(165), width=5,
                                   clockwise=False, line_types=(LineType.STRIPED, LineType.CONTINUOUS),
                                   speed_limit=speedlimits[7]))
         net.add_lane("h", "i",
@@ -163,7 +171,7 @@ class RacetrackEnv(AbstractEnv):
                                   clockwise=False, line_types=(LineType.CONTINUOUS, LineType.NONE),
                                   speed_limit=speedlimits[7]))
         net.add_lane("h", "i",
-                     CircularLane(center4, radii4+5, np.deg2rad(170), np.deg2rad(58), width=5,
+                     CircularLane(center4, radii4 + 5, np.deg2rad(170), np.deg2rad(58), width=5,
                                   clockwise=False, line_types=(LineType.STRIPED, LineType.CONTINUOUS),
                                   speed_limit=speedlimits[7]))
 
@@ -171,7 +179,7 @@ class RacetrackEnv(AbstractEnv):
         center5 = [43.2, 23.4]
         radii5 = 18.5
         net.add_lane("i", "a",
-                     CircularLane(center5, radii5+5, np.deg2rad(240), np.deg2rad(270), width=5,
+                     CircularLane(center5, radii5 + 5, np.deg2rad(240), np.deg2rad(270), width=5,
                                   clockwise=True, line_types=(LineType.CONTINUOUS, LineType.STRIPED),
                                   speed_limit=speedlimits[8]))
         net.add_lane("i", "a",
@@ -179,7 +187,8 @@ class RacetrackEnv(AbstractEnv):
                                   clockwise=True, line_types=(LineType.NONE, LineType.CONTINUOUS),
                                   speed_limit=speedlimits[8]))
 
-        road = Road(network=net, np_random=self.np_random, record_history=self.config["show_trajectories"])
+        road = Road(network=net, np_random=self.np_random,
+                    record_history=self.config["show_trajectories"])
         self.road = road
 
     def _make_vehicles(self) -> None:
@@ -203,9 +212,10 @@ class RacetrackEnv(AbstractEnv):
         vehicle = IDMVehicle.make_on_lane(self.road, ("b", "c", lane_index[-1]),
                                           longitudinal=rng.uniform(
                                               low=0,
-                                              high=self.road.network.get_lane(("b", "c", 0)).length
-                                          ),
-                                          speed=6+rng.uniform(high=3))
+                                              high=self.road.network.get_lane(
+                                                  ("b", "c", 0)).length
+        ),
+            speed=6 + rng.uniform(high=3))
         self.road.vehicles.append(vehicle)
 
         # Other vehicles
@@ -214,9 +224,10 @@ class RacetrackEnv(AbstractEnv):
             vehicle = IDMVehicle.make_on_lane(self.road, random_lane_index,
                                               longitudinal=rng.uniform(
                                                   low=0,
-                                                  high=self.road.network.get_lane(random_lane_index).length
+                                                  high=self.road.network.get_lane(
+                                                      random_lane_index).length
                                               ),
-                                              speed=6+rng.uniform(high=3))
+                                              speed=6 + rng.uniform(high=3))
             # Prevent early collisions
             for v in self.road.vehicles:
                 if np.linalg.norm(vehicle.position - v.position) < 20:
