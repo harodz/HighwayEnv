@@ -162,7 +162,8 @@ class DevHighway(HighwayEnv):
     def default_config(cls) -> dict:
         config = super().default_config()
         config.update({
-            "action": {"type": "ContinuousAction"},
+            "action": {"type": "DiscreteMetaAction"},
+            # "action": {"type": "ContinuousAction"},
             "simulation_frequency": 15,
             "policy_frequency": 15,
             "lanes_count": 3,
