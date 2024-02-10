@@ -10,6 +10,8 @@ from highway_env.utils import near_split
 from highway_env.vehicle.controller import ControlledVehicle
 from highway_env.vehicle.kinematics import Vehicle
 
+from typing import List, Tuple, Optional, Callable, TypeVar, Generic, Union, Dict, Text
+
 Observation = np.ndarray
 
 
@@ -159,11 +161,12 @@ class HighwayEnvFast(HighwayEnv):
 
 
 class DevHighway(HighwayEnv):
+
     def default_config(cls) -> dict:
         config = super().default_config()
         config.update({
-            "action": {"type": "DiscreteMetaAction"},
-            # "action": {"type": "ContinuousAction"},
+            # "action": {"type": "DiscreteMetaAction"},
+            "action": {"type": "ContinuousAction"},
             "simulation_frequency": 15,
             "policy_frequency": 15,
             "lanes_count": 3,
@@ -171,9 +174,11 @@ class DevHighway(HighwayEnv):
             "duration": 30,  # [s]
             "ego_spacing": 2,
             "lane_centering_cost": 4,
-            "lane_centering_reward": 0,
+            "lane_centering_reward": 0.01,
+            "abrupt_steering_penalty": 0.019,
+            "abrupt_acceleration_penalty": 0.001,
             "right_lane_reward": 0.1,
-            "high_speed_reward": 0.4,
+            "high_speed_reward": 0.35,
             "offroad_terminal": False,
         })
         return config
@@ -191,7 +196,8 @@ class DevHighway(HighwayEnv):
             reward = utils.lmap(reward,
                                 [self.config["collision_reward"],
                                  self.config["high_speed_reward"] + self.config["right_lane_reward"] +
-                                 self.config["lane_centering_reward"]],
+                                 self.config["lane_centering_reward"] + self.config["abrupt_steering_penalty"] +
+                                 self.config["abrupt_acceleration_penalty"]],
                                 [0, 1])
         reward *= rewards['on_road_reward']
         return reward
@@ -215,12 +221,28 @@ class DevHighway(HighwayEnv):
         # Reward for stay in the lane properly
         _, lateral = self.vehicle.lane.local_coordinates(self.vehicle.position)
 
+        # Calculate the penalty for abrupt steering changes, assuming 'action.steering' is continuous
+        steering_change_penalty = self.config["abrupt_steering_penalty"] * abs(
+            action[1] - self.previous_steering)
+        # Update the previous steering value for the next timestep
+        self.previous_steering = action[1]
+
+        # Calculate the penalty for abrupt acceleration changes, assuming 'action.acceleration' is continuous
+        acceleration_change_penalty = self.config["abrupt_acceleration_penalty"] * abs(
+            action[0] - self.previous_acceleration)
+        # Update the previous acceleration value for the next timestep
+        self.previous_acceleration = action[0]
+
         return {
-            "collision_reward": float(self.vehicle.crashed),
+            "collision_reward": -1.0 if self.vehicle.crashed else 0,
             "right_lane_reward": lane / max(len(neighbours) - 1, 1),
             "high_speed_reward": np.clip(scaled_speed, 0, 1),
             "on_road_reward": float(self.vehicle.on_road),
             "lane_centering_reward": 1 / (1 + self.config["lane_centering_cost"] * lateral**2),
+            # Negative value to represent penalty
+            "abrupt_steering_penalty": -steering_change_penalty,
+            # Negative value to represent penalty
+            "abrupt_acceleration_penalty": -acceleration_change_penalty
         }
 
     def lane_distance(self, vehicle):
@@ -232,3 +254,8 @@ class DevHighway(HighwayEnv):
                         vehicle.position, vehicle.heading))
                     indexes.append((_from, _to, _id))
         return distances
+
+    def _reset(self) -> None:
+        super()._reset()
+        self.previous_steering = 0
+        self.previous_acceleration = 0
